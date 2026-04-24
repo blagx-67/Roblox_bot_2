@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Roblox Bot Controller</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f0f13; color: #e2e8f0; min-height: 100vh; }
+    header { background: #1a1a2e; padding: 16px 24px; border-bottom: 1px solid #2d2d44; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 1.3rem; font-weight: 700; color: #a78bfa; }
+    .badge { background: #22c55e22; color: #22c55e; border: 1px solid #22c55e44; border-radius: 99px; padding: 2px 10px; font-size: 0.75rem; }
+    main { padding: 24px; max-width: 1100px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media(max-width:700px){ .grid { grid-template-columns: 1fr; } }
+    .card { background: #1a1a2e; border: 1px solid #2d2d44; border-radius: 12px; padding: 20px; }
+    .card h2 { font-size: 1rem; margin-bottom: 14px; color: #a78bfa; display: flex; align-items: center; gap: 8px; }
+    .bot-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+    .bot-item { background: #0f0f1a; border: 1px solid #2d2d44; border-radius: 8px; padding: 10px 14px; cursor: pointer; transition: border-color .15s; display: flex; justify-content: space-between; align-items: center; }
+    .bot-item:hover, .bot-item.selected { border-color: #a78bfa; }
+    .bot-item .name { font-weight: 600; font-size: 0.9rem; }
+    .bot-item .id { font-size: 0.7rem; color: #64748b; margin-top: 2px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+    textarea { width: 100%; background: #0f0f1a; border: 1px solid #2d2d44; border-radius: 8px; color: #e2e8f0; padding: 10px; font-family: 'Courier New', monospace; font-size: 0.85rem; resize: vertical; min-height: 120px; outline: none; }
+    textarea:focus { border-color: #a78bfa; }
+    .btn { background: #7c3aed; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 0.9rem; cursor: pointer; font-weight: 600; transition: background .15s; }
+    .btn:hover { background: #6d28d9; }
+    .btn.secondary { background: #1e293b; border: 1px solid #2d2d44; }
+    .btn.secondary:hover { background: #2d3748; }
+    .btn.danger { background: #b91c1c; }
+    .btn.danger:hover { background: #991b1b; }
+    .row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .output { background: #0f0f1a; border: 1px solid #2d2d44; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.8rem; color: #86efac; min-height: 80px; white-space: pre-wrap; margin-top: 10px; }
+    .scripts-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+    .script-btn { background: #0f0f1a; border: 1px solid #2d2d44; border-radius: 6px; padding: 8px 12px; text-align: left; color: #e2e8f0; cursor: pointer; font-size: 0.85rem; transition: border-color .15s; }
+    .script-btn:hover { border-color: #a78bfa; color: #a78bfa; }
+    #status { font-size: 0.8rem; color: #64748b; margin-top: 16px; }
+    .empty { color: #475569; font-size: 0.85rem; text-align: center; padding: 20px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🤖 Roblox Bot Controller</h1>
+    <span class="badge" id="server-status">● Connected</span>
+  </header>
+  <main>
+    <div class="grid">
+      <!-- Bot List -->
+      <div class="card">
+        <h2>🟢 Connected Bots</h2>
+        <div class="bot-list" id="bot-list">
+          <div class="empty">No bots connected.</div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn secondary" onclick="loadBots()">↻ Refresh</button>
+          <button class="btn danger" id="disconnect-btn" disabled onclick="disconnectBot()">Disconnect</button>
+        </div>
+        <div id="status">No bot selected.</div>
+      </div>
+
+      <!-- Script Editor -->
+      <div class="card">
+        <h2>📜 Execute Script</h2>
+        <textarea id="script-editor" placeholder="-- Write Lua here...&#10;print(game.Players.LocalPlayer.Name)"></textarea>
+        <div class="row">
+          <button class="btn" onclick="executeScript()">▶ Run on Selected</button>
+          <button class="btn secondary" onclick="broadcastScript()">📡 Broadcast All</button>
+        </div>
+        <div class="output" id="output">Awaiting output...</div>
+      </div>
+
+      <!-- Saved Scripts -->
+      <div class="card">
+        <h2>📂 Saved Scripts</h2>
+        <div class="scripts-list" id="scripts-list">
+          <div class="empty">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Quick Commands -->
+      <div class="card">
+        <h2>⚡ Quick Commands</h2>
+        <div class="row">
+          <button class="btn secondary" onclick="sendCommand('ping')">Ping</button>
+          <button class="btn secondary" onclick="sendCommand('getPosition')">Get Position</button>
+          <button class="btn secondary" onclick="promptChat()">Chat</button>
+          <button class="btn secondary" onclick="promptTeleport()">Teleport</button>
+        </div>
+        <div class="output" id="cmd-output">Command output...</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let selectedBotId = null;
+
+    async function loadBots() {
+      const res = await fetch('/api/bots');
+      const data = await res.json();
+      const list = document.getElementById('bot-list');
+      if (!data.bots.length) {
+        list.innerHTML = '<div class="empty">No bots connected.</div>';
+        return;
+      }
+      list.innerHTML = data.bots.map(b => `
+        <div class="bot-item ${b.id === selectedBotId ? 'selected' : ''}" onclick="selectBot('${b.id}', '${b.info.username || 'unknown'}')">
+          <div>
+            <div class="name">@${b.info.username || 'Unknown'}</div>
+            <div class="id">${b.id}</div>
+          </div>
+          <div class="dot"></div>
+        </div>
+      `).join('');
+    }
+
+    function selectBot(id, name) {
+      selectedBotId = id;
+      document.getElementById('status').textContent = `Selected: ${name} (${id})`;
+      document.getElementById('disconnect-btn').disabled = false;
+      loadBots();
+    }
+
+    async function executeScript() {
+      if (!selectedBotId) return alert('Select a bot first.');
+      const script = document.getElementById('script-editor').value;
+      const res = await fetch(`/api/bots/${selectedBotId}/execute`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ script })
+      });
+      const data = await res.json();
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function broadcastScript() {
+      const script = document.getElementById('script-editor').value;
+      const res = await fetch('/api/bots/broadcast/execute', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ script })
+      });
+      const data = await res.json();
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function sendCommand(command, args = {}) {
+      if (!selectedBotId) return alert('Select a bot first.');
+      const res = await fetch(`/api/bots/${selectedBotId}/command`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command, args })
+      });
+      const data = await res.json();
+      document.getElementById('cmd-output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    function promptChat() {
+      const msg = prompt('Chat message:');
+      if (msg) sendCommand('chat', { message: msg });
+    }
+
+    function promptTeleport() {
+      const coords = prompt('Enter X,Y,Z (e.g. 10,5,20):');
+      if (!coords) return;
+      const [x, y, z] = coords.split(',').map(Number);
+      sendCommand('teleport', { x, y, z });
+    }
+
+    async function disconnectBot() {
+      if (!selectedBotId) return;
+      await fetch(`/api/bots/${selectedBotId}`, { method: 'DELETE' });
+      selectedBotId = null;
+      document.getElementById('disconnect-btn').disabled = true;
+      document.getElementById('status').textContent = 'Bot disconnected.';
+      loadBots();
+    }
+
+    async function loadScripts() {
+      const res = await fetch('/api/scripts');
+      const data = await res.json();
+      const list = document.getElementById('scripts-list');
+      if (!data.scripts.length) {
+        list.innerHTML = '<div class="empty">No scripts found.</div>';
+        return;
+      }
+      list.innerHTML = data.scripts.map(s => `
+        <button class="script-btn" onclick="loadScript('${s}')">${s}</button>
+      `).join('');
+    }
+
+    async function loadScript(name) {
+      const res = await fetch(`/api/scripts/${name}`);
+      const data = await res.json();
+      document.getElementById('script-editor').value = data.content;
+    }
+
+    // Init
+    loadBots();
+    loadScripts();
+    setInterval(loadBots, 5000);
+  </script>
+</body>
+</html>
