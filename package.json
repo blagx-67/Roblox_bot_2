@@ -1,0 +1,22 @@
+{
+  "name": "roblox-bot-controller",
+  "version": "1.0.0",
+  "description": "Control server for managing Roblox bots and executing scripts remotely",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "uuid": "^9.0.1",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "keywords": ["roblox", "bot", "automation", "websocket"],
+  "license": "MIT"
+}
